@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:sleek_circular_slider/sleek_circular_slider.dart';
 import 'package:trackizer/database/db_helper.dart';
 import 'package:trackizer/database/db_model.dart';
