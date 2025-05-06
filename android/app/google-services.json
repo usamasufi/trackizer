@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "1082904915788",
+    "project_id": "trackizer-260b2",
+    "storage_bucket": "trackizer-260b2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1082904915788:android:b49d7afe7690f61eb369e9",
+        "android_client_info": {
+          "package_name": "com.usamasufi.trackizer"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1082904915788-0i8e2v2r1iedstoj5a73c23n3tt3vk4f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCIYN1tkA3XpIyHcnPCB7n10kcikJCfqJ8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1082904915788-0i8e2v2r1iedstoj5a73c23n3tt3vk4f.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1082904915788-fv4dcmv0uauf6mg8ti166pn6d6vaoq1p.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.usamasufi.trackizer"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
