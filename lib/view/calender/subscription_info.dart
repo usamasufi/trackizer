@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:trackizer/database/db_helper.dart';
@@ -106,11 +104,11 @@ class _SubscriptionInfoState extends State<SubscriptionInfo> {
                           ),
                           TextButton(
                             onPressed: () {
+                              final navigator = Navigator.of(context);
                               dbHelper
                                   .delete(widget.id)
                                   .then((value) {
-                                    Navigator.push(
-                                      context,
+                                    navigator.push(
                                       MaterialPageRoute(
                                         builder:
                                             (context) => CustomBottomBar(

@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -33,13 +31,19 @@ class _RegisterState extends State<Register> {
     super.dispose();
   }
 
-  Future<void> createUserWithEmailandPassword() async {
+  Future<bool> createUserWithEmailandPassword() async {
     try {
-      await FirebaseAuth.instance
+      final credential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
             email: emailController.text.trim(),
             password: passwordController.text.trim(),
           );
+
+      final user = credential.user;
+      if (user != null && nameController.text.trim().isNotEmpty) {
+        await user.updateDisplayName(nameController.text.trim());
+      }
+      return true;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
         Fluttertoast.showToast(
@@ -59,13 +63,14 @@ class _RegisterState extends State<Register> {
         );
       } else {
         Fluttertoast.showToast(
-          msg: e.message.toString(),
+          msg: e.message ?? 'Unable to create account. Please try again.',
           gravity: ToastGravity.TOP,
           fontSize: 14,
           backgroundColor: AppColors.bgColor,
           textColor: AppColors.whiteColor,
         );
       }
+      return false;
     }
   }
 
@@ -230,28 +235,8 @@ class _RegisterState extends State<Register> {
                 CustomButton(
                   btntext: 'Create Account',
                   onPressed: () async {
-                    if (_formKey.currentState!.validate()) {
-                      if (isChecked == true) {
-                        await createUserWithEmailandPassword();
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          AppRoutes.customBottomBar,
-                          (routes) => false,
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: CustomText(
-                              text: 'Please accept the terms of services.',
-                              tColor: AppColors.whiteColor,
-                              lspacing: 0.2,
-                              fSize: 14,
-                            ),
-                            backgroundColor: AppColors.bgColor,
-                          ),
-                        );
-                      }
-                    } else {
+                    if (!_formKey.currentState!.validate()) {
+                      if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: CustomText(
@@ -262,6 +247,33 @@ class _RegisterState extends State<Register> {
                           ),
                           backgroundColor: AppColors.bgColor,
                         ),
+                      );
+                      return;
+                    }
+
+                    if (!isChecked) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: CustomText(
+                            text: 'Please accept the terms of services.',
+                            tColor: AppColors.whiteColor,
+                            lspacing: 0.2,
+                            fSize: 14,
+                          ),
+                          backgroundColor: AppColors.bgColor,
+                        ),
+                      );
+                      return;
+                    }
+
+                    final navigator = Navigator.of(context);
+                    final isCreated = await createUserWithEmailandPassword();
+                    if (!mounted) return;
+                    if (isCreated) {
+                      navigator.pushNamedAndRemoveUntil(
+                        AppRoutes.customBottomBar,
+                        (routes) => false,
                       );
                     }
                   },

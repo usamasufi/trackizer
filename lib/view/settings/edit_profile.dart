@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:trackizer/database/db_helper.dart';
@@ -36,13 +37,17 @@ class _EditProfileState extends State<EditProfile> {
       orElse:
           () => ExpenseManagementModel(
             isFrom: 'Profile',
-            categoryName: '',
+            categoryName: FirebaseAuth.instance.currentUser?.displayName ?? '',
             amount: '',
+            description: FirebaseAuth.instance.currentUser?.email ?? '',
           ),
     );
 
+    if (!mounted) return;
     setState(() {
       nameController.text = profile.categoryName;
+      emailController.text =
+          profile.description ?? FirebaseAuth.instance.currentUser?.email ?? '';
       incomeController.text = profile.amount;
       if (profile.imagePath != null && profile.imagePath!.isNotEmpty) {
         _pickedImage = File(profile.imagePath!);
@@ -71,7 +76,7 @@ class _EditProfileState extends State<EditProfile> {
           centerTitle: true,
           iconTheme: IconThemeData(color: AppColors.whiteColor),
         ),
-        body: Padding(
+        body: SingleChildScrollView(
           padding: EdgeInsets.symmetric(horizontal: 25, vertical: 15),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,22 +327,89 @@ class _EditProfileState extends State<EditProfile> {
                 hintTextColor: AppColors.white50Color,
                 hintTextLetterSpacing: 0.2,
               ),
-              Spacer(),
-              CustomButton(
-                btntext: 'Update',
-                onPressed: () async {
-                  await dbHelper.update(
-                    ExpenseManagementModel(
+              SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: CustomButton(
+                  btntext: 'Update',
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.maybeOf(context);
+                    final navigator = Navigator.of(context);
+                    final currentUser = FirebaseAuth.instance.currentUser;
+                    final trimmedName = nameController.text.trim();
+                    final trimmedEmail = emailController.text.trim();
+                    final trimmedIncome = incomeController.text.trim();
+
+                    if (trimmedName.isEmpty || trimmedEmail.isEmpty) {
+                      messenger?.showSnackBar(
+                        SnackBar(content: Text('Name and email are required.')),
+                      );
+                      return;
+                    }
+
+                    final existingProfiles = await dbHelper.getExpenseDetails();
+                    final profileMatch = existingProfiles.firstWhere(
+                      (entry) => entry.isFrom == 'Profile',
+                      orElse:
+                          () => ExpenseManagementModel(
+                            isFrom: 'Profile',
+                            categoryName: trimmedName,
+                            amount: trimmedIncome,
+                            description: trimmedEmail,
+                            imagePath: _pickedImage?.path,
+                          ),
+                    );
+
+                    final profile = ExpenseManagementModel(
+                      id: profileMatch.id,
                       isFrom: 'Profile',
-                      imagePath: _pickedImage!.path,
-                      categoryName: nameController.text,
-                      amount: incomeController.text,
-                    ),
-                  );
-                },
-                fSize: 16,
-                fWeight: FontWeight.w600,
+                      imagePath: _pickedImage?.path,
+                      categoryName: trimmedName,
+                      amount: trimmedIncome,
+                      description: trimmedEmail,
+                    );
+
+                    try {
+                      if (profileMatch.id == null) {
+                        await dbHelper.insert(profile);
+                      } else {
+                        await dbHelper.update(profile);
+                      }
+
+                      if (currentUser != null) {
+                        try {
+                          await currentUser.updateDisplayName(trimmedName);
+                          if (currentUser.email != trimmedEmail) {
+                            await currentUser.verifyBeforeUpdateEmail(
+                              trimmedEmail,
+                            );
+                          }
+                        } catch (_) {
+                          // Keep local profile data consistent even if auth email update is blocked.
+                        }
+                      }
+
+                      if (!mounted) return;
+                      messenger?.showSnackBar(
+                        SnackBar(
+                          content: Text('Profile updated successfully.'),
+                        ),
+                      );
+                      navigator.pop();
+                    } catch (error) {
+                      if (!mounted) return;
+                      messenger?.showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to update profile: $error'),
+                        ),
+                      );
+                    }
+                  },
+                  fSize: 16,
+                  fWeight: FontWeight.w600,
+                ),
               ),
+              SizedBox(height: 24),
             ],
           ),
         ),

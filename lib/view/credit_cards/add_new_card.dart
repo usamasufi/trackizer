@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -215,6 +213,9 @@ class _AddNewCardState extends State<AddNewCard> {
                 btntext: 'Confirm',
                 onPressed: () async {
                   final dbHelper = DBHelper();
+                  final navigator = Navigator.of(context);
+                  final messenger = ScaffoldMessenger.maybeOf(context);
+
                   String cardNo = cardNoController.text.replaceAll(' ', '');
                   String name = nameController.text.trim();
                   String cvv = cvvController.text.trim();
@@ -226,7 +227,7 @@ class _AddNewCardState extends State<AddNewCard> {
                       cvv.isEmpty ||
                       expiry.isEmpty ||
                       amount.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger?.showSnackBar(
                       SnackBar(content: Text('Please fill in all fields.')),
                     );
                     return;
@@ -234,7 +235,7 @@ class _AddNewCardState extends State<AddNewCard> {
 
                   // Check card number length
                   if (cardNo.length < 16) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger?.showSnackBar(
                       SnackBar(content: Text('Card number must be 16 digits.')),
                     );
                     return;
@@ -243,7 +244,7 @@ class _AddNewCardState extends State<AddNewCard> {
                   // Check expiry format
                   final expiryRegex = RegExp(r'^(0[1-9]|1[0-2])\/\d{4}$');
                   if (!expiryRegex.hasMatch(expiry)) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger?.showSnackBar(
                       SnackBar(
                         content: Text('Expiry date must be in MM/YYYY format.'),
                       ),
@@ -253,7 +254,7 @@ class _AddNewCardState extends State<AddNewCard> {
 
                   // Check CVV length
                   if (cvv.length != 3) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger?.showSnackBar(
                       SnackBar(content: Text('CVV must be 3 digits.')),
                     );
                     return;
@@ -262,47 +263,48 @@ class _AddNewCardState extends State<AddNewCard> {
                   // Check amount format
                   final amountRegex = RegExp(r'^\d+(\.\d{1,2})?$');
                   if (!amountRegex.hasMatch(amount)) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger?.showSnackBar(
                       SnackBar(content: Text('Invalid amount format.')),
                     );
                     return;
                   }
 
-                  await dbHelper
-                      .insert(
-                        ExpenseManagementModel(
-                          isFrom: 'Card',
-                          cardNumber: cardNo,
-                          categoryName: name,
-                          expiryDate: expiry,
-                          cVV: cvv,
-                          amount: amount,
-                        ),
-                      )
-                      .then((_) {
-                        Fluttertoast.showToast(
-                          msg: "Card added successfully!",
-                          toastLength: Toast.LENGTH_SHORT,
-                          gravity: ToastGravity.BOTTOM,
-                          timeInSecForIosWeb: 3,
-                          backgroundColor: AppColors.whiteColor,
-                          textColor: AppColors.blackColor,
-                          fontSize: 16.0,
-                        );
+                  try {
+                    await dbHelper.insert(
+                      ExpenseManagementModel(
+                        isFrom: 'Card',
+                        cardNumber: cardNo,
+                        categoryName: name,
+                        expiryDate: expiry,
+                        cVV: cvv,
+                        amount: amount,
+                      ),
+                    );
 
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (context) => CustomBottomBar(selectedIndex: 3),
-                          ),
-                        );
-                      })
-                      .onError((error, stackTrace) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error adding card: $error')),
-                        );
-                      });
+                    if (!mounted) return;
+
+                    Fluttertoast.showToast(
+                      msg: "Card added successfully!",
+                      toastLength: Toast.LENGTH_SHORT,
+                      gravity: ToastGravity.BOTTOM,
+                      timeInSecForIosWeb: 3,
+                      backgroundColor: AppColors.whiteColor,
+                      textColor: AppColors.blackColor,
+                      fontSize: 16.0,
+                    );
+
+                    if (!mounted) return;
+                    navigator.push(
+                      MaterialPageRoute(
+                        builder: (context) => CustomBottomBar(selectedIndex: 3),
+                      ),
+                    );
+                  } catch (error) {
+                    if (!mounted) return;
+                    messenger?.showSnackBar(
+                      SnackBar(content: Text('Error adding card: $error')),
+                    );
+                  }
                 },
 
                 fSize: 16,

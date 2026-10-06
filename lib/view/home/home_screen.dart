@@ -25,12 +25,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     setState(() {});
   }
 
-  @override
-  void initState() {
-    initValues();
-    super.initState();
-  }
-
   String _getMonthFromDate(String? expiryDate) {
     if (expiryDate == null || expiryDate.isEmpty) {
       return '';
@@ -87,6 +81,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return monthNames[month - 1];
   }
 
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    initValues();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<ExpenseManagementModel> filteredList =
@@ -132,7 +141,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       return sum + (double.tryParse(item.amount.toString()) ?? 0);
     });
 
-    var controller = TabController(length: 2, vsync: this);
     return Scaffold(
       backgroundColor: AppColors.bgColor,
       appBar: AppBar(
@@ -297,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: TabBar(
                   indicatorPadding: EdgeInsets.all(4),
                   padding: EdgeInsets.symmetric(vertical: 7, horizontal: 9),
-                  controller: controller,
+                  controller: _tabController,
                   indicatorWeight: 0.0,
                   dividerColor: AppColors.transparentColor,
                   unselectedLabelStyle: TextStyle(
@@ -340,7 +348,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     child: IntrinsicHeight(
                       child: TabBarView(
-                        controller: controller,
+                        controller: _tabController,
                         children: [
                           SingleChildScrollView(
                             physics: ClampingScrollPhysics(),

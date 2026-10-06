@@ -29,16 +29,21 @@ class _LoginState extends State<Login> {
     super.dispose();
   }
 
-  Future<void> loginUserWithEmailPassword() async {
+  Future<bool> loginUserWithEmailPassword() async {
     try {
-      final userCredential = await FirebaseAuth.instance
-          .signInWithEmailAndPassword(
-            email: emailController.text.trim(),
-            password: passwordController.text.trim(),
-          );
-      print(userCredential);
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+      return true;
     } on FirebaseAuthException catch (e) {
-      print(e.message);
+      if (!mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? 'Unable to sign in. Please try again.'),
+        ),
+      );
+      return false;
     }
   }
 
@@ -146,12 +151,15 @@ class _LoginState extends State<Login> {
                   btntext: 'Confirm',
                   onPressed: () async {
                     if (_formKey.currentState!.validate()) {
-                      await loginUserWithEmailPassword();
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        AppRoutes.customBottomBar,
-                        (routes) => false,
-                      );
+                      final isLoggedIn = await loginUserWithEmailPassword();
+                      if (!mounted) return;
+                      if (isLoggedIn) {
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          AppRoutes.customBottomBar,
+                          (routes) => false,
+                        );
+                      }
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Please fill in all fields.')),

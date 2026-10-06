@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -698,6 +696,9 @@ class _NewSubscriptionState extends State<NewSubscription> {
               CustomButton(
                 btntext: 'Add this platform',
                 onPressed: () async {
+                  final messenger = ScaffoldMessenger.maybeOf(context);
+                  final navigator = Navigator.of(context);
+
                   String productName = nameController.text.trim();
                   String description = descriptionController.text.trim();
                   String category = categoryController.text.trim();
@@ -711,7 +712,7 @@ class _NewSubscriptionState extends State<NewSubscription> {
                       category.isEmpty ||
                       endDate.isEmpty ||
                       startDate.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger?.showSnackBar(
                       SnackBar(content: Text("Please fill all the fields.")),
                     );
                     return;
@@ -719,7 +720,7 @@ class _NewSubscriptionState extends State<NewSubscription> {
 
                   // 💰 Price Check
                   if (monthlyPrice <= 0) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger?.showSnackBar(
                       SnackBar(content: Text("Please set a valid price.")),
                     );
                     return;
@@ -733,7 +734,7 @@ class _NewSubscriptionState extends State<NewSubscription> {
                     startDateTime = DateFormat('dd-MM-yyyy').parse(startDate);
                     endDateTime = DateFormat('dd-MM-yyyy').parse(endDate);
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger?.showSnackBar(
                       SnackBar(content: Text("Invalid date format.")),
                     );
                     return;
@@ -741,7 +742,7 @@ class _NewSubscriptionState extends State<NewSubscription> {
 
                   // 📆 End Date Must Be After Start Date
                   if (endDateTime.isBefore(startDateTime)) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger?.showSnackBar(
                       SnackBar(
                         content: Text(
                           "Expiry date cannot be before start date.",
@@ -753,7 +754,7 @@ class _NewSubscriptionState extends State<NewSubscription> {
 
                   // 🧾 Check If Cards Are Added
                   if (filteredList.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger?.showSnackBar(
                       SnackBar(content: Text("Please add a card first.")),
                     );
                     return;
@@ -761,7 +762,7 @@ class _NewSubscriptionState extends State<NewSubscription> {
 
                   // 💳 Card Must Be Selected
                   if (_selectedCard == -1) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger?.showSnackBar(
                       SnackBar(content: Text("Please select a card.")),
                     );
                     return;
@@ -769,7 +770,7 @@ class _NewSubscriptionState extends State<NewSubscription> {
 
                   // 🖼️ Image Must Be Picked
                   if (_pickedImage == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger?.showSnackBar(
                       SnackBar(content: Text("Please select an image.")),
                     );
                     return;
@@ -784,7 +785,7 @@ class _NewSubscriptionState extends State<NewSubscription> {
                   double enteredAmount = double.tryParse(amount) ?? 0;
 
                   if (enteredAmount > selectedCardAmount) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger?.showSnackBar(
                       SnackBar(
                         content: CustomText(
                           text:
@@ -798,38 +799,46 @@ class _NewSubscriptionState extends State<NewSubscription> {
                     return;
                   }
 
-                  // ✅ All Good – Save the Subscription
-                  await dbHelper.insert(
-                    ExpenseManagementModel(
-                      isFrom: 'Subscription',
-                      imagePath: _pickedImage!.path,
-                      categoryName: productName,
-                      description: description,
-                      subCategory: category,
-                      startDate: startDate,
-                      expiryDate: endDate,
-                      amount: amount,
-                      cardNumber: cardNomber.toString(),
-                    ),
-                  );
+                  try {
+                    await dbHelper.insert(
+                      ExpenseManagementModel(
+                        isFrom: 'Subscription',
+                        imagePath: _pickedImage!.path,
+                        categoryName: productName,
+                        description: description,
+                        subCategory: category,
+                        startDate: startDate,
+                        expiryDate: endDate,
+                        amount: amount,
+                        cardNumber: cardNomber.toString(),
+                      ),
+                    );
 
-                  // 🎉 Success Toast
-                  Fluttertoast.showToast(
-                    msg: "Subscription added successfully.",
-                    toastLength: Toast.LENGTH_SHORT,
-                    gravity: ToastGravity.BOTTOM,
-                    backgroundColor: AppColors.primaryColor,
-                    textColor: AppColors.whiteColor,
-                    fontSize: 16.0,
-                  );
+                    if (!mounted) return;
 
-                  // 🚀 Navigate Back to Home
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CustomBottomBar(selectedIndex: 0),
-                    ),
-                  );
+                    Fluttertoast.showToast(
+                      msg: "Subscription added successfully.",
+                      toastLength: Toast.LENGTH_SHORT,
+                      gravity: ToastGravity.BOTTOM,
+                      backgroundColor: AppColors.primaryColor,
+                      textColor: AppColors.whiteColor,
+                      fontSize: 16.0,
+                    );
+
+                    if (!mounted) return;
+                    navigator.push(
+                      MaterialPageRoute(
+                        builder: (context) => CustomBottomBar(selectedIndex: 0),
+                      ),
+                    );
+                  } catch (error) {
+                    if (!mounted) return;
+                    messenger?.showSnackBar(
+                      SnackBar(
+                        content: Text('Error adding subscription: $error'),
+                      ),
+                    );
+                  }
                 },
                 fSize: 16,
                 fWeight: FontWeight.w600,

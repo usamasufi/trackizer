@@ -1,13 +1,60 @@
 import 'package:currency_picker/currency_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackizer/utils/app_colors.dart';
 import 'package:trackizer/widgets/custom_button.dart';
 import 'package:trackizer/widgets/custom_text.dart';
 import 'package:trackizer/widgets/custom_text_Field.dart';
 
-class SelectCurrency extends StatelessWidget {
-  SelectCurrency({super.key});
+class SelectCurrency extends StatefulWidget {
+  const SelectCurrency({super.key});
+
+  @override
+  State<SelectCurrency> createState() => _SelectCurrencyState();
+}
+
+class _SelectCurrencyState extends State<SelectCurrency> {
   final currencyController = TextEditingController();
+  static const String _currencyKey = 'selected_currency';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCurrency();
+  }
+
+  Future<void> _loadSavedCurrency() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedCurrency = prefs.getString(_currencyKey) ?? 'USD';
+    if (!mounted) return;
+    setState(() {
+      currencyController.text = savedCurrency;
+    });
+  }
+
+  Future<void> _saveCurrency() async {
+    final value = currencyController.text.trim();
+    if (value.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please select a currency.')),
+      );
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_currencyKey, value);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Currency updated to $value')),
+    );
+    Navigator.pop(context, value);
+  }
+
+  @override
+  void dispose() {
+    currencyController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,29 +77,6 @@ class SelectCurrency extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
         child: Column(
           children: [
-            // CustomText(
-            //   text: 'Search Currency',
-            //   tColor: AppColors.addCategoryHeadingColor,
-            //   fSize: 14,
-            //   lspacing: 0.2,
-            // ),
-            // SizedBox(height: 10),
-            // ElevatedButton(
-            //   onPressed: () {
-            //     showCurrencyPicker(
-            //       context: context,
-            //       onSelect: (selectedCurrency) {
-            //         currencyController.text = selectedCurrency.name;
-            //       },
-            //     );
-            //   },
-            //   child: CustomText(
-            //     text: 'Pick Currency',
-            //     tColor: AppColors.whiteColor,
-            //     fSize: 14,
-            //     lspacing: 0.2,
-            //   ),
-            // ),
             SizedBox(height: 10),
             CustomTextField(
               suffixIcon: IconButton(
@@ -61,7 +85,9 @@ class SelectCurrency extends StatelessWidget {
                   showCurrencyPicker(
                     context: context,
                     onSelect: (selectedCurrency) {
-                      currencyController.text = selectedCurrency.name;
+                      setState(() {
+                        currencyController.text = selectedCurrency.code;
+                      });
                     },
                   );
                 },
@@ -79,7 +105,7 @@ class SelectCurrency extends StatelessWidget {
             Spacer(),
             CustomButton(
               btntext: 'Update',
-              onPressed: () {},
+              onPressed: _saveCurrency,
               fSize: 16,
               fWeight: FontWeight.w600,
             ),

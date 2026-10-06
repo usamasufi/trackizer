@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackizer/database/db_helper.dart';
 import 'package:trackizer/database/db_model.dart';
 import 'package:trackizer/utils/app_colors.dart';
@@ -25,15 +26,21 @@ class _SettingsState extends State<Settings> {
   List<ExpenseManagementModel> profileList = [];
   bool isSwitched = false;
   bool isThemeWhite = false;
+  String selectedCurrency = 'USD';
+
   Future<void> initValues() async {
     profileList = await dbHelper.getExpenseDetails();
-    setState(() {});
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      selectedCurrency = prefs.getString('selected_currency') ?? 'USD';
+    });
   }
 
   @override
   void initState() {
-    initValues();
     super.initState();
+    initValues();
   }
 
   @override
@@ -198,7 +205,7 @@ class _SettingsState extends State<Settings> {
                           ),
                           Spacer(),
                           CustomText(
-                            text: 'USD',
+                            text: selectedCurrency,
                             tColor: AppColors.white50Color,
                             fSize: 12,
                             fWeight: FontWeight.w500,
@@ -285,13 +292,21 @@ class _SettingsState extends State<Settings> {
               ),
               SizedBox(height: 8),
               InkWell(
-                onTap: () {
-                  FirebaseAuth.instance.signOut();
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    AppRoutes.login,
-                    (routes) => false,
-                  );
+                onTap: () async {
+                  final navigator = Navigator.of(context);
+                  try {
+                    await FirebaseAuth.instance.signOut();
+                    if (!context.mounted) return;
+                    navigator.pushNamedAndRemoveUntil(
+                      AppRoutes.login,
+                      (routes) => false,
+                    );
+                  } catch (error) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                      SnackBar(content: Text('Failed to log out: $error')),
+                    );
+                  }
                 },
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),

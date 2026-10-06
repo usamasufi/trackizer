@@ -12,22 +12,31 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  Timer? _timer;
+
   @override
   void initState() {
     super.initState();
-    Timer(Duration(seconds: 3), () {     
+    _timer = Timer(Duration(seconds: 3), () {
+      if (!mounted) return;
       FirebaseAuth.instance.currentUser != null
           ? Navigator.pushNamedAndRemoveUntil(
-            context,
-            AppRoutes.customBottomBar,
-            (route) => false,
-          )
+              context,
+              AppRoutes.customBottomBar,
+              (route) => false,
+            )
           : Navigator.pushNamedAndRemoveUntil(
-            context,
-            AppRoutes.getStarted,
-            (route) => false,
-          );
+              context,
+              AppRoutes.getStarted,
+              (route) => false,
+            );
     });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   @override
